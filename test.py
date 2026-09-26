@@ -1,8 +1,8 @@
 import streamlit as st
 from scra import create_scra
 
-# CHANGE_LOCATION_URL = "https://ieics.kephis.org/kephis-api/staffProfile/staffProfile"
-LOCATION_UPDATE_URL = "https://ieics.kephis.org/kephis-api/staffProfile/updateStaffProfile"
+CHANGE_LOCATION_URL = "https://ieics.kephis.org/kephis-api/staffProfile/staffProfile"
+# LOCATION_UPDATE_URL = "https://ieics.kephis.org/kephis-api/staffProfile/updateStaffProfile"
 
 st.set_page_config(page_title="User Validation", page_icon="✓")
 
@@ -37,7 +37,7 @@ def check_location_page():
         with st.spinner("Sending user details..."):
             try:
                 scraper = create_scra()
-                response = scraper.post(LOCATION_UPDATE_URL, json=payload)
+                response = scraper.post(CHANGE_LOCATION_URL, json=payload)
                 response.raise_for_status()
             except Exception as exc:
                 try:
@@ -51,7 +51,9 @@ def check_location_page():
                 st.json(data)
 
 
-PAGES = {"Check Location": check_location_page}
+PAGES = {
+    "Check Location": check_location_page,
+}
 
 page_name = st.sidebar.radio("Pages", options=list(PAGES))
 PAGES[page_name]()
