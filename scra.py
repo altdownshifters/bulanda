@@ -15,14 +15,12 @@ scraper.verify = False
 def create_scra():
     url_sign = "https://ieics.kephis.org/kephis-api/api/auth/signin"
     payl = {"username":"skpl","password":"Matakosana"}
-    scraper.post(url_sign, data=payl)
-    
-    
-
-    return scraper
+    resp = scraper.post(url_sign, json=payl)
+    if resp.status_code == 200:
+        scraper.headers.update({"Authorization": f"Bearer {resp.json()['accessToken']}"})
+        return scraper
+    else:
+        raise Exception(f"Failed to sign in: {resp.status_code} - {resp.text}")
 
 if __name__ == "__main__":
-    scrap = create_scra()
-    resp = scrap.get("https://ieics.kephis.org/kephis-api/api/validateuser")
-
-    print(resp.text)
+    print(create_scra())
