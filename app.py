@@ -7,97 +7,83 @@ from helpers.scra import create_scra, get_staff_profile_id, get_office_locations
 st.set_page_config(page_title="Bulanda", page_icon="😋")
 
 def set_location_page():
-    put_location_url = "https://ieics.kephis.org/kephis-api/staffProfile/staffProfile"
-    st.title("Give Location")
-    st.write("Enter the user details")
+    set_location_url = "https://ieics.kephis.org/kephis-api/staffProfile/staffProfile"
+    update_location_url = "https://ieics.kephis.org/kephis-api/staffProfile/updateStaffProfile"
 
-    with st.form("put location"):
-        office_locations = get_office_locations_ids()
-        selected_location = st.selectbox("Office location", options=list(office_locations.keys()))
-        users_id = st.text_input("User ID", value="263358")
-        submitted = st.form_submit_button("Set Location", type="primary")
+    st.title("Set or Update Location")
+    st.write("Enter the user details below.")
 
-    if submitted:
-        region = office_locations[selected_location]['region_id']
-        office = office_locations[selected_location]['office_id']
-        user = users_id.strip()
-
-        if not region or not office or not user:
-            st.error("All fields are required.")
-            return
-
-        payload = {
-            "region_id": region,
-            "office_location_id": office,
-            "users_id": user,
-        }
-
-        with st.spinner("Sending user details..."):
-            try:
-                scraper = create_scra()
-                response = scraper.post(put_location_url, json=payload)
-                response.raise_for_status()
-            except Exception as exc:
-                try:
-                    resp_data = response.json()
-                    st.error(resp_data.get("data", f"Error: {exc}"))
-                except Exception:
-                    st.error(f"Request failed: {exc}")
-            else:
-                data = response.json()
-                st.success(data.get("data", "User validated successfully"))
-                st.json(data)
-
-
-def update_location_page():
     office_locations = get_office_locations_ids()
-    location_update_url = "https://ieics.kephis.org/kephis-api/staffProfile/updateStaffProfile"
-    st.title("Update Location")
-    st.write("Enter the user details")
 
-    with st.form("put location"):
+    with st.form("location_form"):
         selected_location = st.selectbox("Office location", options=list(office_locations.keys()))
-        
         users_id = st.text_input("User ID", value="263358")
-        submitted = st.form_submit_button("Update Location", type="primary")
+        submitted = st.form_submit_button("Submit Location", type="primary")
 
-    if submitted:
-        region = office_locations[selected_location]['region_id']
-        office = office_locations[selected_location]['office_id']
-        user = users_id.strip()
+    if not submitted:
+        return
 
-        if not region or not office or not user:
-            st.error("All fields are required.")
-            return
+    region = office_locations[selected_location]['region_id']
+    office = office_locations[selected_location]['office_id']
+    user = users_id.strip()
 
-        payload = {
-            "region_id": region,
-            "office_location_id": office,
-            "users_id": user,
-            "active":True,
-            "staffProfile_id":get_staff_profile_id(user)
-        }
+    if not region or not office or not user:
+        st.error("All fields are required.")
+        return
 
-        with st.spinner("Sending user details..."):
+    payload = {
+        "region_id": region,
+        "office_location_id": office,
+        "users_id": user,
+    }
+
+    scraper = create_scra()
+
+    with st.spinner("Processing request..."):
+        # Step 1: Attempt to set location
+        response = scraper.post(set_location_url, json=payload)
+        res_data = response.json() if response.status_code == 200 else {}
+
+        # Check if set location failed or signaled that an update is required
+        needs_update = (
+            response.status_code != 200 
+            or "user profile already set" in str(res_data.get("message", "")).lower()
+            or "user profile already set" in str(res_data.get("data", "")).lower()
+        )
+
+        # Step 2: Fallback to update location if condition triggers
+        if needs_update:
+            payload.update({
+                "active": True,
+                "staffProfile_id": get_staff_profile_id(user)
+            })
+            response = scraper.post(update_location_url, json=payload)
+
+        # Step 3: Handle Final Response
+        try:
+            response.raise_for_status()
+            data = response.json()
+            
+            # Extract success message dynamically depending on API structure
+            success_msg = (
+                data.get("officeLocation", {}).get("name") 
+                if isinstance(data.get("officeLocation"), dict) 
+                else data.get("data", "Location set/updated successfully.")
+            )
+            
+            st.success(f"Success: {success_msg}")
+            st.json(data)
+            
+        except Exception as exc:
             try:
-                scraper = create_scra()
-                response = scraper.post(location_update_url, json=payload)
-                response.raise_for_status()
-            except Exception as exc:
-                try:
-                    resp_data = response.json()
-                    st.error(resp_data.get("data", f"Error: {exc}"))
-                except Exception:
-                    st.error(f"Request failed: {exc}")
-            else:
-                data = response.json()
-                st.success(data.get("officeLocation", "").get("name", "User set successfully"))
-                st.json(data)
+                err_data = response.json()
+                st.error(err_data.get("data", err_data.get("message", f"Error: {exc}")))
+            except Exception:
+                st.error(f"Request failed with status {response.status_code}: {exc}")
 
 
 PAGES = {
     "Set Location": set_location_page,
-    "Update Location": update_location_page,
 }
 
 page_name = st.sidebar.radio("Menu", options=list(PAGES))
