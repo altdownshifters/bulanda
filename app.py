@@ -4,7 +4,7 @@ from helpers.scra import create_scra, get_staff_profile_id, get_office_locations
 
 
 
-st.set_page_config(page_title="Bulanda", page_icon="💕")
+st.set_page_config(page_title="Bulanda", page_icon="😋")
 
 def set_location_page():
     set_location_url = "https://ieics.kephis.org/kephis-api/staffProfile/staffProfile"
