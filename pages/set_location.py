@@ -1,10 +1,6 @@
 from helpers.scra import create_scra, get_staff_profile_id, get_office_locations_ids
 
 
-
-
-st.set_page_config(page_title="Bulanda", page_icon="😋")
-
 def set_location_page():
     set_location_url = "https://ieics.kephis.org/kephis-api/staffProfile/staffProfile"
     update_location_url = "https://ieics.kephis.org/kephis-api/staffProfile/updateStaffProfile"
@@ -81,27 +77,8 @@ def set_location_page():
                 st.error(f"Request failed with status {response.status_code}: {exc}")
 
 
-def block_user():
-    st.title("Block User")
-    st.write("User block")
-
-    with st.form("block_form"):
-        users_id = st.text_input("User ID", value="263358")
-        submitted = st.form_submit_button("Block User", type="primary")
-
-
-def unblock_user():
-    st.title("Unblock User")
-    st.write("User unblock")
-
-    with st.form("unblock_form"):
-        users_id = st.text_input("User ID", value="263358")
-        submitted = st.form_submit_button("Unblock User", type="primary")
-
 PAGES = {
-    "Set Location": set_location_page,
-    "Block User": block_user,
-    "Unblock User": unblock_user
+    "Set Location": set_location_page
 }
 
 page_name = st.sidebar.radio("Menu", options=list(PAGES))
